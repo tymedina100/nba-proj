@@ -1,0 +1,4 @@
+* text=auto eol=lf
+
+# PowerShell scripts should keep CRLF to avoid execution quirks
+*.ps1 eol=crlf

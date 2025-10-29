@@ -1,0 +1,9 @@
+minutes:
+  use_rules: true
+  use_gbm: false
+sim:
+  draws: 5000
+  shared_pace_shock: true
+pricing:
+  kelly_fraction: 0.25
+  min_ev_pct: 5

@@ -1,0 +1,26 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+dist/
+build/
+
+# VS Code (we KEEP .vscode/settings.json in this project)
+.vscode/*.log
+
+# Data & artifacts
+runs/
+data/parquet/boxscores/
+data/parquet/priors/
+data/parquet/schedule/
+data/parquet/matchup/
+data/parquet/rosters/
+data/parquet/*.parquet
+# Keep sample user odds CSVs (handy for demos)
+!data/parquet/odds_user/*.csv
+# Local overrides
+data/minutes_overrides.csv

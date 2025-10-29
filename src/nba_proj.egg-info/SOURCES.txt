@@ -1,0 +1,15 @@
+README.md
+pyproject.toml
+src/api/main.py
+src/core/evals.py
+src/core/pricing.py
+src/core/priors.py
+src/core/simulator.py
+src/etl/ingest_boxscores.py
+src/nba_proj.egg-info/PKG-INFO
+src/nba_proj.egg-info/SOURCES.txt
+src/nba_proj.egg-info/dependency_links.txt
+src/nba_proj.egg-info/requires.txt
+src/nba_proj.egg-info/top_level.txt
+src/utils/io.py
+tests/test_priors.py

@@ -1,0 +1,4 @@
+player_id,market,side,line,decimal_odds
+P_A,PTS,OVER,22.5,1.90
+P_B,REB,OVER,5.5,1.95
+P_C,AST,OVER,3.5,2.05
