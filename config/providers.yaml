@@ -1,0 +1,38 @@
+season: "2025-26"
+
+providers:
+  # Works TODAY using your existing dummy ETL output as a local source.
+  # Lets you prove the scaffold end-to-end immediately.
+  local_csv:
+    kind: csv
+    path: "data/parquet/boxscores/box_{date}.csv"
+    # If your CSV already matches schema, you can omit rename entirely.
+    # rename:
+    #   GameID: game_id
+    #   PlayerID: player_id
+    #   TeamID: team_id
+    #   OppID: opp_id
+    #   MP: minutes
+    #   TRB: REB
+
+  # Future example: JSON endpoint (fill base_url/endpoint and write transform)
+  my_json_source:
+    kind: json_api
+    base_url: "https://example.com/api"
+    endpoint: "boxscores?date={date}"
+    params: {}
+    headers: {}
+
+  # Future example: HTML table (fill base_url/endpoint and column rename)
+  my_html_source:
+    kind: html_table
+    base_url: "https://example.com"
+    endpoint: "nba/boxscores?date={date}"
+    table_index: 0
+    rename:
+      GameID: game_id
+      PlayerID: player_id
+      TeamID: team_id
+      OppID: opp_id
+      MP: minutes
+      TRB: REB
