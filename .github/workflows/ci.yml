@@ -1,0 +1,23 @@
+name: CI
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.10" }
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest
+      - name: Smoke run
+        run: |
+          python -m src.etl.ingest_boxscores --date 2025-10-28
+          python -m src.core.priors --update --date 2025-10-28
+          python -m src.core.simulator --date 2025-10-28
+          python -m src.core.pricing --odds data/parquet/odds_user/odds_2025-10-28.csv --date 2025-10-28
+          test -f runs/2025-10-28/edges.csv
