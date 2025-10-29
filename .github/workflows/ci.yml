@@ -14,9 +14,20 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e .
           pip install pytest
+      - name: Fetch daily (local_csv)
+        run: |
+          python -m src.etl.fetch_daily --date 2025-10-28 --provider local_csv
+      - name: Seed sample odds
+        run: |
+          mkdir -p data/parquet/odds_user
+          cat > data/parquet/odds_user/odds_2025-10-28.csv << 'CSV'
+player_id,market,side,line,decimal_odds
+P_A,PTS,OVER,22.5,1.90
+P_B,REB,OVER,5.5,1.95
+P_C,AST,OVER,3.5,2.05
+CSV
       - name: Smoke run
         run: |
-          python -m src.etl.ingest_boxscores --date 2025-10-28
           python -m src.core.priors --update --date 2025-10-28
           python -m src.core.simulator --date 2025-10-28
           python -m src.core.pricing --odds data/parquet/odds_user/odds_2025-10-28.csv --date 2025-10-28
