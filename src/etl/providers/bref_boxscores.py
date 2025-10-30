@@ -1,7 +1,9 @@
+# src/etl/providers/bref_boxscores.py
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import List
 from pathlib import Path
+from io import StringIO
 import re, time
 
 import pandas as pd
@@ -40,17 +42,23 @@ def _slug(s: str) -> str:
 def _rows_from_basic_table(tb, team_id: str, game_id: str) -> list[dict]:
     """
     Parse one BRef 'box-XXX-game-basic' table using data-stat attributes.
-    Returns list of dicts with game_id, player, minutes, PTS, REB, AST, team_id.
+    Returns list of dicts with game_id, player, minutes, PTS, REB, AST, team_id and a
+    temporary 'section' flag to help derive roles.
     """
     out = []
     tbody = tb.find("tbody")
     if not tbody:
         return out
 
+    in_starters_block = True  # flips to False after the 'Reserves' divider
+
     for tr in tbody.find_all("tr", recursive=False):
-        # Skip separators or header-ish rows
-        role = (tr.get("class") or [])
-        if "thead" in role:
+        # header-ish or divider rows have class thead
+        if "thead" in (tr.get("class") or []):
+            # Detect the “Reserves” switch; BRef puts the word in a <th>
+            hdr = tr.find("th")
+            if hdr and hdr.get_text(strip=True) == "Reserves":
+                in_starters_block = False
             continue
 
         # Player cell is a <th data-stat="player">
@@ -81,6 +89,7 @@ def _rows_from_basic_table(tb, team_id: str, game_id: str) -> list[dict]:
             "PTS": _num("pts"),
             "REB": _num("trb"),
             "AST": _num("ast"),
+            "section": "starters" if in_starters_block else "reserves",
         })
     return out
 
@@ -88,7 +97,7 @@ def _rows_from_basic_table(tb, team_id: str, game_id: str) -> list[dict]:
 class BrefProvider:
     """
     Scrapes Basketball-Reference daily box score index and per-game basic box tables.
-    Produces: game_id, player_id, team_id, opp_id, minutes, PTS, REB, AST
+    Produces: game_id, player_id, team_id, opp_id, minutes, PTS, REB, AST, role
     """
 
     def __init__(self, cfg: dict):
@@ -143,7 +152,6 @@ class BrefProvider:
             raw_dir.mkdir(parents=True, exist_ok=True)
             (raw_dir / "bref_index.html").write_text(html, encoding="utf-8")
 
-        # Links look like /boxscores/YYYYMMDDXXX.html where XXX is team code
         hrefs = set(re.findall(r'/boxscores/\d{9}[A-Z]{3}\.html', html))
         return [f"{self.base_url}{h}" for h in sorted(hrefs)]
 
@@ -168,15 +176,30 @@ class BrefProvider:
             if not m:
                 continue
             team_id = m.group(1)
-
             rows = _rows_from_basic_table(tb, team_id, game_id)
             if rows:
                 frames.append(pd.DataFrame(rows))
 
         if not frames:
-            return pd.DataFrame(columns=["game_id","player_id","team_id","opp_id","minutes","PTS","REB","AST"])
+            return pd.DataFrame(columns=["game_id","player_id","team_id","opp_id","minutes","PTS","REB","AST","role"])
 
         base = pd.concat(frames, ignore_index=True)
+
+        # Role assignment: starters direct from section; among reserves, max minutes = sixth
+        base["is_starter"] = base["section"].eq("starters")
+
+        def assign_roles(group: pd.DataFrame) -> pd.Series:
+            roles = pd.Series(index=group.index, dtype=object)
+            roles.loc[group["is_starter"]] = "starter"
+            bench_idx = group.index[~group["is_starter"]]
+            if len(bench_idx) > 0:
+                six_idx = group.loc[bench_idx, "minutes"].astype(float).idxmax()
+                roles.loc[six_idx] = "sixth"
+                roles.loc[bench_idx.difference([six_idx])] = "bench"
+            return roles
+
+        base["role"] = base.groupby(["game_id", "team_id"], group_keys=False).apply(assign_roles)
+        base = base.drop(columns=["section", "is_starter"])
 
         # Add opp_id by pairing unique team entries per game
         teams = base[["game_id", "team_id"]].drop_duplicates()
@@ -188,16 +211,15 @@ class BrefProvider:
 
         # Finalize IDs
         out["player_id"] = out["player"].apply(_slug)
-        out = out[["game_id", "player_id", "team_id", "opp_id", "minutes", "PTS", "REB", "AST"]]
+        out = out[["game_id", "player_id", "team_id", "opp_id", "minutes", "PTS", "REB", "AST", "role"]]
         return out
 
     def fetch_boxscores(self, ctx: FetchContext) -> pd.DataFrame:
         urls = self._game_urls(ctx.date)
         if not urls:
-            return pd.DataFrame(columns=["game_id","player_id","team_id","opp_id","minutes","PTS","REB","AST"])
-
+            return pd.DataFrame(columns=["game_id","player_id","team_id","opp_id","minutes","PTS","REB","AST","role"])
         parts = [self._parse_game(ctx.date, u) for u in urls]
         if not parts:
-            return pd.DataFrame(columns=["game_id","player_id","team_id","opp_id","minutes","PTS","REB","AST"])
+            return pd.DataFrame(columns=["game_id","player_id","team_id","opp_id","minutes","PTS","REB","AST","role"])
         df = pd.concat(parts, ignore_index=True)
         return df
