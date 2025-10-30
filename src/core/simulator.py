@@ -7,12 +7,14 @@ import pandas as pd
 from numpy.random import default_rng
 
 
-def posterior_samples(alpha: float, beta: float, minutes: float, draws: int, rng: np.random.Generator):
+def posterior_samples(alpha: float, beta: float, minutes: float, draws: int, rng: np.random.Generator, rate_mult: float = 1.0):
     """
     Conjugate Gamma–Poisson: lambda ~ Gamma(alpha, beta); X ~ Poisson(lambda * minutes).
     We parameterize Gamma with shape=alpha and scale=1/beta.
+    Role-based rate adjustments multiply lambda by `rate_mult`.
     """
     lam = rng.gamma(shape=float(alpha), scale=1.0 / float(beta), size=draws)
+    lam = lam * float(rate_mult)
     return rng.poisson(lam * float(minutes))
 
 
@@ -65,23 +67,44 @@ def main(run_date: str, draws: int = 5000):
     # Shared pace shock (multiplicative on counts); 5% sd tracer-bullet
     pace_shock = rng.normal(loc=1.0, scale=0.05)
 
+    # --- NEW: cache a single minutes draw per player across all stats for coherence ---
+    minutes_draws: dict[str, float] = {}
+
     out_rows = []
     # Iterate one prior row per (player_id, stat)
     for _, row in pri.iterrows():
         pid = row["player_id"]
         stat = row["stat"]
-        # Minutes draw per player with per-player sd; clip to [6, 44]
+
+        # Minutes params
         m_row = minutes.loc[minutes["player_id"] == pid]
         if m_row.empty:
-            # fallback if someone slipped through
             m_mu, m_sd = 30.0, 4.0
         else:
             m_mu = float(m_row.iloc[0]["min_proj"])
             m_sd = float(m_row.iloc[0]["min_sd"])
-        m_draw = float(np.clip(rng.normal(m_mu, m_sd), 6.0, 44.0))
 
-        # Posterior predictive samples and summary
-        samples = posterior_samples(alpha=float(row["alpha"]), beta=float(row["beta"]), minutes=m_draw, draws=draws, rng=rng)
+        # Apply role-based multipliers if present
+        min_mult = float(row["min_mult"]) if "min_mult" in row else 1.0
+        rate_mult = float(row["rate_mult"]) if "rate_mult" in row else 1.0
+
+        m_mu_adj = m_mu * min_mult
+        m_sd_adj = m_sd * min_mult
+
+        # Draw minutes ONCE per player, reuse for PTS/REB/AST (and thus composites)
+        if pid not in minutes_draws:
+            minutes_draws[pid] = float(np.clip(rng.normal(m_mu_adj, m_sd_adj), 6.0, 44.0))
+        m_draw = minutes_draws[pid]
+
+        # Posterior predictive samples and summary (apply shared pace and role-based rate multiplier)
+        samples = posterior_samples(
+            alpha=float(row["alpha"]),
+            beta=float(row["beta"]),
+            minutes=m_draw,
+            draws=draws,
+            rng=rng,
+            rate_mult=rate_mult
+        )
         samples = samples * pace_shock  # apply shared game-level scaling
         summ = summarize(samples)
 
@@ -90,6 +113,9 @@ def main(run_date: str, draws: int = 5000):
             "player_id": pid,
             "stat": stat,
             "minutes": m_draw,
+            "role": row["role"] if "role" in row else None,
+            "min_mult": min_mult,
+            "rate_mult": rate_mult,
             **summ,
         })
 

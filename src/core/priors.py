@@ -4,8 +4,20 @@ import pathlib
 import pandas as pd
 from src.utils.io import read_csv_glob
 
+# Legacy global fallback (kept for non-PTS/REB/AST or as ultimate default)
 PRIOR_ALPHA = 5.0
 PRIOR_BETA = 120.0
+
+# Seed priors per stat (pseudo-minutes strength via beta)
+# mean rate ≈ alpha / beta (per-minute); example targets produce realistic early-season outputs
+PRIOR_BY_STAT = {
+    # ~0.45 pts/min → ~13.5 @30m with light prior strength (beta=200)
+    "PTS": {"alpha": 0.45 * 200.0, "beta": 200.0},
+    # ~0.12 reb/min → ~3.6 @30m
+    "REB": {"alpha": 0.12 * 200.0, "beta": 200.0},
+    # ~0.09 ast/min → ~2.7 @30m
+    "AST": {"alpha": 0.09 * 200.0, "beta": 200.0},
+}
 
 # --- Role weighting (conservative defaults) ---
 ROLE_WEIGHTS = {
@@ -141,7 +153,12 @@ def update_priors(run_date: str):
                 a0, b0 = float(old.alpha.iloc[0]), float(old.beta.iloc[0])
                 n0 = int(old.n_games.iloc[0])
             else:
-                a0, b0, n0 = PRIOR_ALPHA, PRIOR_BETA, 0
+                base = PRIOR_BY_STAT.get(stat)
+                if base:
+                    a0, b0 = float(base["alpha"]), float(base["beta"])
+                else:
+                    a0, b0 = PRIOR_ALPHA, PRIOR_BETA
+                n0 = 0
             x, m = float(r[stat]), float(r["minutes"])
             a1, b1 = a0 + x, b0 + m
             rows.append(dict(
@@ -149,7 +166,7 @@ def update_priors(run_date: str):
                 stat=stat,
                 alpha=a1,
                 beta=b1,
-                minutes_scale=36.0,  # keep your existing scale field
+                minutes_scale=36.0,  # kept for compatibility
                 n_games=n0 + int(r.n_games),
                 last_update=run_date,
                 role=role,
@@ -169,6 +186,9 @@ __all__ = [
     "_resolve_role",
     "build_player_priors",
     "update_priors",
+    "PRIOR_BY_STAT",
+    "PRIOR_ALPHA",
+    "PRIOR_BETA",
 ]
 
 
