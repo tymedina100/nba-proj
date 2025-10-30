@@ -9,10 +9,27 @@ from .providers.base import FetchContext, Provider
 from .providers.csv_provider import CsvProvider
 from .providers.json_api import JsonApiProvider
 from .providers.html_table import HtmlTableProvider
+from .providers.bref_boxscores import BrefProvider
 
 def _load_cfg() -> Dict[str, Any]:
     with open("config/providers.yaml", "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
+
+def _build_provider(name: str, pcfg: Dict[str, Any]) -> Provider:
+    kind = pcfg["kind"]
+    if kind == "csv":
+        return CsvProvider(pcfg)
+    if kind == "json_api":
+        def transform(payload, _ctx):
+            df = pd.DataFrame(payload["rows"])
+            return df
+        return JsonApiProvider(pcfg, transform)
+    if kind == "html_table":
+        return HtmlTableProvider(pcfg)
+    if kind == "bref":                       # <-- add this
+        return BrefProvider(pcfg)
+    raise SystemExit(f"[fetch_daily] unknown provider kind: {kind}")
+
 
 def _normalize(df: pd.DataFrame, date: str) -> pd.DataFrame:
     # Expect at least these columns (rename via provider if needed)
@@ -32,21 +49,6 @@ def _normalize(df: pd.DataFrame, date: str) -> pd.DataFrame:
     })
     out["date"] = date
     return out[["game_id","player_id","team_id","opp_id","date","minutes","PTS","REB","AST"]]
-
-def _build_provider(name: str, pcfg: Dict[str, Any]) -> Provider:
-    kind = pcfg["kind"]
-    if kind == "csv":
-        return CsvProvider(pcfg)
-    if kind == "json_api":
-        # minimal transform placeholder; you’ll customize per real API
-        def transform(payload, _ctx):
-            # Example: map payload["rows"] list of dicts to our schema
-            df = pd.DataFrame(payload["rows"])
-            return df
-        return JsonApiProvider(pcfg, transform)
-    if kind == "html_table":
-        return HtmlTableProvider(pcfg)
-    raise SystemExit(f"[fetch_daily] unknown provider kind: {kind}")
 
 def main(run_date: str, provider_name: str):
     cfg = _load_cfg()

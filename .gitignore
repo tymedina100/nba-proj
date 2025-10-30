@@ -24,3 +24,6 @@ data/parquet/*.parquet
 !data/parquet/odds_user/*.csv
 # Local overrides
 data/minutes_overrides.csv
+data/raw/
+data/parquet/
+runs/
