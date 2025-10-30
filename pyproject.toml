@@ -3,7 +3,7 @@ name = "nba-proj"
 version = "0.1.0"
 description = "NBA Betting Projection Engine (minutes-first, explainable)"
 requires-python = ">=3.10"
-authors = [{name = "Tyler", email = "tyler@example.com"}]
+authors = [{name = "Tyler", email = "tmedina7@asu.edu"}]
 readme = "README.md"
 dependencies = [
   "pandas>=2.2",
@@ -15,9 +15,9 @@ dependencies = [
   "scipy>=1.11",
   "pytest>=8.2",
   "requests>=2.32.0",
-  "PyYAML>=6.0.0"
-  beautifulsoup4>=4.12
-  lxml>=5.3
+  "PyYAML>=6.0.0",
+  "beautifulsoup4>=4.12",
+  "lxml>=5.3"
 ]
 
 [tool.pytest.ini_options]
