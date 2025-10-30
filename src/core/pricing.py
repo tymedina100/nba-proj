@@ -1,6 +1,7 @@
 # src/core/pricing.py
 import argparse, pathlib, pandas as pd
 from math import erf, sqrt
+from src.core.odds import validate_odds
 
 def cdf_norm(x, mu, sigma):
     if sigma <= 1e-9:
@@ -15,6 +16,7 @@ def main(odds_path: str, run_date: str):
         raise SystemExit("[pricing] predictions missing; run simulate first")
 
     odds = pd.read_csv(odds_path)
+    odds = validate_odds(odds)
     out = []
     for _, r in odds.iterrows():
         pid, market, side, line, d = r.player_id, r.market, r.side, float(r.line), float(r.decimal_odds)
