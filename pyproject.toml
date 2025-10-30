@@ -16,6 +16,8 @@ dependencies = [
   "pytest>=8.2",
   "requests>=2.32.0",
   "PyYAML>=6.0.0"
+  beautifulsoup4>=4.12
+  lxml>=5.3
 ]
 
 [tool.pytest.ini_options]

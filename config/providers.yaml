@@ -1,4 +1,4 @@
-season: "2025-26"
+season: 2025
 
 providers:
   # Works TODAY using your existing dummy ETL output as a local source.
@@ -14,6 +14,15 @@ providers:
     #   OppID: opp_id
     #   MP: minutes
     #   TRB: REB
+
+  bref_boxscores:
+    kind: bref
+    base_url: "https://www.basketball-reference.com"
+    endpoint: "/boxscores/?month={month}&day={day}&year={year}"
+    retries: 4
+    backoff: 1.25
+    raw_dump: true
+
 
   # Future example: JSON endpoint (fill base_url/endpoint and write transform)
   my_json_source:
