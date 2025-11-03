@@ -6,6 +6,10 @@ from pathlib import Path
 from io import StringIO
 import re, time
 
+import time, requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
