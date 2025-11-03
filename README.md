@@ -25,7 +25,7 @@ The focus is on core counting stats: **Points (PTS)**, **Rebounds (REB)**, and *
 
 ### Prerequisites
 
-- Python 3.8+
+- Python 3.11+
 - pip
 
 ### Installation
@@ -40,7 +40,7 @@ python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Install the package
-pip install -e .
+pip install -e .[dev]
 ```
 
 ### Running the Pipeline
