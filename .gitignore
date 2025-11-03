@@ -1,4 +1,4 @@
-# Python
+# --- env & build ---
 .venv/
 __pycache__/
 *.py[cod]
@@ -8,27 +8,24 @@ __pycache__/
 .coverage
 dist/
 build/
+*.egg-info/
 
-# VS Code (we KEEP .vscode/settings.json in this project)
+# --- editors ---
 .vscode/*.log
+.DS_Store
 
-# Data & artifacts
-runs/
-data/parquet/boxscores/
-data/parquet/priors/
-data/parquet/schedule/
-data/parquet/matchup/
-data/parquet/rosters/
-data/parquet/*.parquet
+# --- generated data & artifacts ---
 runs/
 
-# Keep sample user odds CSVs (handy for demos)
+# Ignore all parquet caches by default…
+data/parquet/**
+
+# …but keep demo odds CSVs
+!data/parquet/odds_user/
 !data/parquet/odds_user/*.csv
-# Local overrides
-data/minutes_overrides.csv
+
+# Other local data you don't want tracked
 data/raw/
-data/parquet/
 data/odds/*.csv
 data/outcomes/*.csv
-
-
+data/minutes_overrides.csv
