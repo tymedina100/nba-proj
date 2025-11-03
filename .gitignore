@@ -20,10 +20,15 @@ data/parquet/schedule/
 data/parquet/matchup/
 data/parquet/rosters/
 data/parquet/*.parquet
+runs/
+
 # Keep sample user odds CSVs (handy for demos)
 !data/parquet/odds_user/*.csv
 # Local overrides
 data/minutes_overrides.csv
 data/raw/
 data/parquet/
-runs/
+data/odds/*.csv
+data/outcomes/*.csv
+
+
